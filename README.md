@@ -1,3 +1,7 @@
+# Outline
+- [MVC](#MVC)
+- [MVVM](#MVVM)
+- [ViewModel SavedState](#ViewModel%20SavedState)
 ## MVC
 ### 最一般的處理方式，為人垢病的就是要一直保存資料，避免 Activity 被短暫消滅後造成資料丟失
 
@@ -344,3 +348,130 @@ public class MainActivity extends AppCompatActivity {
         }
     ```
 
+## ViewModel SavedState
+### 儘管 MVVM 使用 ViewModel 維持了 Activity 重啟時的數據存儲，但當 ViewModel 也被系統殺掉時(就是整個系統被殺掉，通常發生在記憶體不夠用或過久未使用時，系統自動會銷毀該應用程式)
+### 要注意的是，如果是用戶手動殺掉，則 ViewModel SavedState 不會保留
+
+1. 使用 onSavedInstanceState，跟一般的方法一樣(不建議)
+   ```java
+   // MyViewModel.java
+    package com.example.viewmodelrestore;
+
+    import androidx.lifecycle.MutableLiveData;
+    import androidx.lifecycle.SavedStateHandle;
+    import androidx.lifecycle.ViewModel;
+
+    public class MyViewModel extends ViewModel {
+        private MutableLiveData<Integer> number;
+
+        public MutableLiveData<Integer> getNumber() {
+            if(number == null) {
+                number = new MutableLiveData<>();
+                number.setValue(0);
+            }
+            return number;
+        }
+
+        public void add() {
+            number.setValue(number.getValue() + 1);
+        }
+    }
+
+   ```
+   ```java
+   // MainActivity.java
+    package com.example.viewmodelrestore;
+
+    import androidx.annotation.NonNull;
+    import androidx.appcompat.app.AppCompatActivity;
+    import androidx.databinding.DataBindingUtil;
+    import androidx.lifecycle.ViewModelProvider;
+
+    import android.os.Bundle;
+
+    import com.example.viewmodelrestore.databinding.ActivityMainBinding;
+
+    public class MainActivity extends AppCompatActivity {
+        MyViewModel myViewModel;
+        ActivityMainBinding binding;
+        final static String KEY_NUMBER = "my_number";
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+            myViewModel = new ViewModelProvider(this).get(MyViewModel.class);
+
+            // 加載
+            if(savedInstanceState != null) {
+                myViewModel.getNumber().setValue(savedInstanceState.getInt(KEY_NUMBER));
+            }
+
+            binding.setData(myViewModel);
+            binding.setLifecycleOwner(this);
+        }
+
+        // 儲存
+        @Override
+        protected void onSaveInstanceState(@NonNull Bundle outState) {
+            super.onSaveInstanceState(outState);
+            outState.putInt(KEY_NUMBER, myViewModel.getNumber().getValue());
+        }
+    }
+   ```
+2. ViewModel SavedState(建議)
+   ```java
+   // MyViewModel.java
+    package com.example.viewmodelrestore;
+
+    import androidx.lifecycle.MutableLiveData;
+    import androidx.lifecycle.SavedStateHandle;
+    import androidx.lifecycle.ViewModel;
+
+    public class MyViewModel extends ViewModel {
+        private SavedStateHandle handle;
+        public MyViewModel(SavedStateHandle handle) {
+            this.handle = handle;
+        }
+        public MutableLiveData<Integer> getNumber() {
+            // 文檔所示，傳回來的 handle 不會為空
+            // 這個情況只有在程式未被加載過，第一次加載時這個判斷才會成立
+            if(!handle.contains(MainActivity.KEY_NUMBER)) {
+                // 初始化為 0
+                handle.set(MainActivity.KEY_NUMBER, 0);
+            }
+            return handle.getLiveData(MainActivity.KEY_NUMBER);
+        }
+
+        public void add() {
+            getNumber().setValue(getNumber().getValue() + 1);
+        }
+    }
+   ```
+   ```java
+   // MainActivity.java
+    package com.example.viewmodelrestore;
+
+    import androidx.appcompat.app.AppCompatActivity;
+    import androidx.databinding.DataBindingUtil;
+    import androidx.lifecycle.ViewModelProvider;
+
+    import android.os.Bundle;
+
+    import com.example.viewmodelrestore.databinding.ActivityMainBinding;
+
+    public class MainActivity extends AppCompatActivity {
+        MyViewModel myViewModel;
+        ActivityMainBinding binding;
+        public final static String KEY_NUMBER = "my_number";
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+            myViewModel = new ViewModelProvider(this).get(MyViewModel.class);
+            binding.setData(myViewModel);
+            binding.setLifecycleOwner(this);
+        }
+    }
+   ```
