@@ -1,11 +1,177 @@
 # Outline
 - [Outline](#outline)
+- [寫 Android 的好習慣，為自己而寫](#寫-android-的好習慣為自己而寫)
+- [SharedPreference](#sharedpreference)
 - [MVC](#mvc)
 - [MVVM](#mvvm)
   - [ViewModel](#viewmodel)
   - [ViewModelWithLiveData](#viewmodelwithlivedata)
   - [DataBinding](#databinding)
   - [ViewModel SavedState](#viewmodel-savedstate)
+
+# 寫 Android 的好習慣，為自己而寫
+- 將常量放至 resource 裡，避免 hardcoded，讓可維護性上升，專案越大效果越顯著
+
+# SharedPreference
+**共用的資料，可以在外部和內部進行存取**
+  1. getPreferences 方法，每個 Activity 只有一個
+
+        ```java
+        // MainActivity.java
+        package com.example.sharedpreferences;
+
+        import android.content.Context;
+        import android.content.SharedPreferences;
+        import android.os.Bundle;
+        import android.util.Log;
+
+        import androidx.appcompat.app.AppCompatActivity;
+
+        public class MainActivity extends AppCompatActivity {
+
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                setContentView(R.layout.activity_main);
+
+                SharedPreferences shp = getPreferences(Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = shp.edit();
+                // 寫入 NUMBER 為 100 的數字
+                editor.putInt("NUMBER", 100);
+                // 非同步提交，避免不同部件提早獲取時還未被寫入
+                editor.apply();
+
+                // 讀取 NUMBER，第一個是要讀取的變數名稱，第二個是如果沒有的默認返回值
+                int x = shp.getInt("NUMBER", 0);
+                String TAG = "MyLog";
+                Log.d(TAG, "OnCreate: " + x);
+            }
+        }
+        ```
+        ```xml
+        <!-- 在 Device File Explorer 裡的 data/data/package_name/shared_prefs 下會生成一個 MainActivity xml -->
+        <?xml version='1.0' encoding='utf-8'standalone='yes' ?>
+        <map>
+            <int name="NUMBER" value="100" />
+        </map>
+        ```
+  2. getSharedPreferences()，可以在一個 Activity 下創建多個
+        ```java
+        // MainActivity.java
+        // MainActivity.java
+        package com.example.sharedpreferences;
+
+        import android.content.Context;
+        import android.content.SharedPreferences;
+        import android.os.Bundle;
+        import android.util.Log;
+
+        import androidx.appcompat.app.AppCompatActivity;
+
+        public class MainActivity extends AppCompatActivity {
+
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                setContentView(R.layout.activity_main);
+
+                // 只改這行
+                SharedPreferences shp = getSharedPreferences("MY_DATA", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = shp.edit();
+                // 寫入 NUMBER 為 100 的數字
+                editor.putInt("NUMBER", 100);
+                // 非同步提交，避免不同部件提早獲取時還未被寫入
+                editor.apply();
+
+                // 讀取 NUMBER，第一個是要讀取的變數名稱，第二個是如果沒有的默認返回值
+                int x = shp.getInt("NUMBER", 0);
+                String TAG = "MyLog";
+                Log.d(TAG, "OnCreate: " + x);
+            }
+        }
+        ```
+        ```xml
+        <!-- 在 Device File Explorer 裡的 data/data/package_name/shared_prefs 下會生成一個 MY_DATA xml -->
+        <?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+        <map>
+            <int name="NUMBER" value="100" />
+        </map>
+        ```
+  3. 在 Activity 外部存取 SharedPreferences
+        ```java
+        // MainActivity.java
+        package com.example.sharedpreferences;
+
+        import android.os.Bundle;
+        import android.util.Log;
+
+        import androidx.appcompat.app.AppCompatActivity;
+
+        public class MainActivity extends AppCompatActivity {
+
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                setContentView(R.layout.activity_main);
+
+                // 不能傳遞 this，Activity 被殺掉時會導致 memory leak
+                // 傳遞 getApplicationContext，因為它是單例
+                MyData myData = new MyData(getApplicationContext());
+
+                myData.number = 1000;
+                myData.save();
+                int y = myData.load();
+
+                String TAG = "MyLog";
+                Log.d(TAG, "onCreate: " + y);
+            }
+        }
+        ```
+        ```java
+        // MyData.java
+        package com.example.sharedpreferences;
+
+        import android.content.Context;
+        import android.content.SharedPreferences;
+
+        public class MyData {
+
+            public int number;
+            private Context context;
+
+            public MyData(Context context) {
+                this.context = context;
+            }
+            public void save() {
+                // in strings.xml，避免 hardCoded
+                //     <string name="MY_DATA">my_data</string>
+                String name = context.getResources().getString(R.string.MY_DATA);
+                SharedPreferences shp = context.getSharedPreferences(name, Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = shp.edit();
+                // in strings.xml，避免 hardCoded
+                //     <string name="MY_KEY">my_key</string>
+                String key = context.getResources().getString(R.string.MY_KEY);
+                editor.putInt(key, number);
+                editor.apply();
+            }
+
+            public int load() {
+                // in strings.xml，避免 hardCoded
+                //     <string name="MY_DATA">my_data</string>
+                String name = context.getResources().getString(R.string.MY_DATA);
+                SharedPreferences shp = context.getSharedPreferences(name, Context.MODE_PRIVATE);
+                // in strings.xml，避免 hardCoded
+                //     <string name="MY_KEY">my_key</string>
+                String key = context.getResources().getString(R.string.MY_KEY);
+                // in int.xml(自己建的)，避免 hardCoded
+                //     <integer name="defValue"> 0 </integer>
+                int def_value = context.getResources().getInteger(R.integer.defValue);
+                int x = shp.getInt(key, def_value);
+                number = x;
+                return x;
+            }
+        }
+        ```
 # MVC
 **最一般的處理方式，為人垢病的就是要一直保存資料，避免 Activity 被短暫消滅後造成資料丟失**
 
