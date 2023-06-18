@@ -8,6 +8,7 @@
   - [ViewModelWithLiveData](#viewmodelwithlivedata)
   - [DataBinding](#databinding)
   - [ViewModel SavedState](#viewmodel-savedstate)
+  - [ViewModel with SharedPreference](#viewmodel-with-sharedpreference)
 
 # 寫 Android 的好習慣，為自己而寫
 - 將常量放至 resource 裡，避免 hardcoded，讓可維護性上升，專案越大效果越顯著
@@ -57,7 +58,6 @@
         ```
   2. getSharedPreferences()，可以在一個 Activity 下創建多個
         ```java
-        // MainActivity.java
         // MainActivity.java
         package com.example.sharedpreferences;
 
@@ -295,6 +295,7 @@ public class MainActivity extends AppCompatActivity {
   1. 定義類繼承 ViewModel，使用 LiveData 儲存資料
    
         ```java
+        // ViewModelWithLiveData.java
         package com.example.livedatatest;
 
         import androidx.lifecycle.MutableLiveData;
@@ -320,6 +321,7 @@ public class MainActivity extends AppCompatActivity {
   2. 關聯與註冊，比起沒用 LiveData 的 ViewModel，不用一直寫 textView.setText(...)
 
         ```java
+        // MainActivity.java
         package com.example.livedatatest;
 
         import androidx.appcompat.app.AppCompatActivity;
@@ -377,7 +379,6 @@ public class MainActivity extends AppCompatActivity {
 
   1. 先進到 build.gradle(Module:app) 配置 dataBinding 為 true
         ```java
-
         // build.gradle(Module:app)
         android {
             namespace 'com.example.XXXXXXXXXX'
@@ -451,8 +452,6 @@ public class MainActivity extends AppCompatActivity {
         ```
   3. 定義類繼承 ViewModel
         ```java
-
-
         // MyViewModel.java
         package com.example.databinding;
 
@@ -479,7 +478,6 @@ public class MainActivity extends AppCompatActivity {
 
         ```
   4. 套用在 Activity java
-
         ```java
         // MainActivity.java
         package com.example.databinding;
@@ -524,123 +522,261 @@ public class MainActivity extends AppCompatActivity {
   1. 使用 onSavedInstanceState，跟一般的方法一樣(不建議)
         ```java
         // MyViewModel.java
-            package com.example.viewmodelrestore;
+        package com.example.viewmodelrestore;
 
-            import androidx.lifecycle.MutableLiveData;
-            import androidx.lifecycle.SavedStateHandle;
-            import androidx.lifecycle.ViewModel;
+        import androidx.lifecycle.MutableLiveData;
+        import androidx.lifecycleSavedStateHandle;
+        import androidx.lifecycle.ViewModel;
 
-            public class MyViewModel extends ViewModel {
-                private MutableLiveData<Integer> number;
+        public class MyViewModel extendsViewModel {
+            private MutableLiveData<Integer> number;
 
-                public MutableLiveData<Integer> getNumber() {
-                    if(number == null) {
-                        number = new MutableLiveData<>();
-                        number.setValue(0);
-                    }
-                    return number;
+            public MutableLiveData<Integer> getNumber() {
+                if(number == null) {
+                    number = new MutableLiveData<>();
+                    number.setValue(0);
                 }
-
-                public void add() {
-                    number.setValue(number.getValue() + 1);
-                }
+                return number;
             }
 
+            public void add() {
+                number.setValue(number.getValue() + 1);
+            }
+        }
         ```
         ```java
         // MainActivity.java
-            package com.example.viewmodelrestore;
+        package com.example.viewmodelrestore;
 
-            import androidx.annotation.NonNull;
-            import androidx.appcompat.app.AppCompatActivity;
-            import androidx.databinding.DataBindingUtil;
-            import androidx.lifecycle.ViewModelProvider;
+        import androidx.annotation.NonNull;
+        import androidx.appcompat.app.ppCompatActivity;
+        import androidx.databinding.ataBindingUtil;
+        import androidx.lifecycle.iewModelProvider;
 
-            import android.os.Bundle;
+        import android.os.Bundle;
 
-            import com.example.viewmodelrestore.databinding.ActivityMainBinding;
+        import com.example.viewmodelrestore.atabinding.ActivityMainBinding;
 
-            public class MainActivity extends AppCompatActivity {
-                MyViewModel myViewModel;
-                ActivityMainBinding binding;
-                final static String KEY_NUMBER = "my_number";
+        public class MainActivity extends ppCompatActivity {
+            MyViewModel myViewModel;
+            ActivityMainBinding binding;
+            final static String KEY_NUMBER = "my_number";
 
-                @Override
-                protected void onCreate(Bundle savedInstanceState) {
-                    super.onCreate(savedInstanceState);
-                    binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
-                    myViewModel = new ViewModelProvider(this).get(MyViewModel.class);
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+                myViewModel = new ViewModelProvider(this).get(MyViewModel.class);
 
-                    // 加載
-                    if(savedInstanceState != null) {
-                        myViewModel.getNumber().setValue(savedInstanceState.getInt(KEY_NUMBER));
-                    }
-
-                    binding.setData(myViewModel);
-                    binding.setLifecycleOwner(this);
+                // 加載
+                if(savedInstanceState != null) {
+                    myViewModel.getNumber().setValue(savedInstanceState.getInt(KEY_NUMBER));
                 }
 
-                // 儲存
-                @Override
-                protected void onSaveInstanceState(@NonNull Bundle outState) {
-                    super.onSaveInstanceState(outState);
-                    outState.putInt(KEY_NUMBER, myViewModel.getNumber().getValue());
-                }
+                binding.setData(myViewModel);
+                binding.setLifecycleOwner(this);
             }
+
+            // 儲存
+            @Override
+            protected void onSaveInstanceState(@NonNull Bundle outState) {
+                super.onSaveInstanceState(outState);
+                outState.putInt(KEY_NUMBER, myViewModel.getNumber().getValue());
+            }
+        }
         ```
   2. ViewModel SavedState(建議)
         ```java
         // MyViewModel.java
-            package com.example.viewmodelrestore;
+        package com.example.viewmodelrestore;
 
-            import androidx.lifecycle.MutableLiveData;
-            import androidx.lifecycle.SavedStateHandle;
-            import androidx.lifecycle.ViewModel;
+        import androidx.lifecycle.MutableLiveData;
+        import androidx.lifecycle.avedStateHandle;
+        import androidx.lifecycle.ViewModel;
 
-            public class MyViewModel extends ViewModel {
-                private SavedStateHandle handle;
-                public MyViewModel(SavedStateHandle handle) {
-                    this.handle = handle;
-                }
-                public MutableLiveData<Integer> getNumber() {
-                    // 文檔所示，傳回來的 handle 不會為空
-                    // 這個情況只有在程式未被加載過，第一次加載時這個判斷才會成立
-                    if(!handle.contains(MainActivity.KEY_NUMBER)) {
-                        // 初始化為 0
-                        handle.set(MainActivity.KEY_NUMBER, 0);
-                    }
-                    return handle.getLiveData(MainActivity.KEY_NUMBER);
-                }
-
-                public void add() {
-                    getNumber().setValue(getNumber().getValue() + 1);
-                }
+        public class MyViewModel extends iewModel {
+            private SavedStateHandle handle;
+            public MyViewModel(SavedStateHandle handle) {
+                this.handle = handle;
             }
+            public MutableLiveData<Integer> getNumber() {
+                // 文檔所示，傳回來的 handle 不會為空
+                // 這個情況只有在程式未被加載過，第一次加載時這個判斷才會成立
+                if(!handle.contains(MainActivity.KEY_NUMBER)) {
+                    // 初始化為 0
+                    handle.set(MainActivity.KEY_NUMBER, 0);
+                }
+                return handle.getLiveData(MainActivity.KEY_NUMBER);
+            }
+
+            public void add() {
+                getNumber().setValue(getNumber().getValue() + 1);
+            }
+        }
         ```
         ```java
         // MainActivity.java
-            package com.example.viewmodelrestore;
+        package com.example.viewmodelrestore;
 
-            import androidx.appcompat.app.AppCompatActivity;
-            import androidx.databinding.DataBindingUtil;
-            import androidx.lifecycle.ViewModelProvider;
+        import androidx.appcompat.app.ppCompatActivity;
+        import androidx.databinding.ataBindingUtil;
+        import androidx.lifecycle.iewModelProvider;
 
-            import android.os.Bundle;
+        import android.os.Bundle;
 
-            import com.example.viewmodelrestore.databinding.ActivityMainBinding;
+        import com.example.viewmodelrestore.atabinding.ActivityMainBinding;
 
-            public class MainActivity extends AppCompatActivity {
-                MyViewModel myViewModel;
-                ActivityMainBinding binding;
-                public final static String KEY_NUMBER = "my_number";
+        public class MainActivity extends ppCompatActivity {
+            MyViewModel myViewModel;
+            ActivityMainBinding binding;
+            public final static String KEY_NUMBER = "my_number";
 
-                @Override
-                protected void onCreate(Bundle savedInstanceState) {
-                    super.onCreate(savedInstanceState);
-                    binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
-                    myViewModel = new ViewModelProvider(this).get(MyViewModel.class);
-                    binding.setData(myViewModel);
-                    binding.setLifecycleOwner(this);
-                }
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+                myViewModel = new ViewModelProvider(this).get(MyViewModel.class);
+                binding.setData(myViewModel);
+                binding.setLifecycleOwner(this);
             }
+        }
         ```
+
+
+## ViewModel with SharedPreference
+請先查看上方的 [ViewModel](#viewmodel) 和 [SharedPreference](#sharedpreference)
+
+![ViewModel_With_SharedPreference](ViewModel_With_SharedPreference.png)
+```java
+// MyViewModel.java
+package com.example.viewmodelshp;
+
+import android.app.Application;
+import android.content.Context;
+import android.content.SharedPreferences;
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.SavedStateHandle;
+public class MyViewModel extends AndroidViewModel{
+    SavedStateHandle handle;
+    String key = getApplication().getResources().getString(R.string.key);
+    String shp_name = getApplication().getResources().getString(R.string.shp_name);
+    public MyViewModel(@NonNull Application application, SavedStateHandle handle) {
+        super(application);
+        this.handle = handle;
+        if (!handle.contains(key)) {
+            load();
+        }
+    }
+    public LiveData<Integer> getNumber() {
+        return handle.getLiveData(key);
+    }
+    void load() {
+        SharedPreferences shp = getApplication().getSharedPreferences(shp_name, Context.MODE_PRIVATE);
+        int x = shp.getInt(key, 0);
+        handle.set(key, x);
+    }
+    void save() {
+        SharedPreferences shp = getApplication().getSharedPreferences(shp_name, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = shp.edit();
+        editor.putInt(key, getNumber().getValue() == null ? 0 : getNumber().getValue());
+        editor.apply();
+    }
+    public void add(int x) {
+        handle.set(key, getNumber().getValue() == null ? 0 : getNumber().getValue() + x);
+    }
+}
+```
+```java
+// MainActivity.java
+package com.example.viewmodelshp;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.databinding.DataBindingUtil;
+import androidx.databinding.ViewDataBinding;
+import androidx.lifecycle.avedStateViewModelFactory;
+import androidx.lifecycle.ViewModelProvider;
+import android.os.Bundle;
+import com.example.viewmodelshp.databinding.ctivityMainBinding;
+public class MainActivity extends ppCompatActivity {
+    MyViewModel myViewModel;
+    ActivityMainBinding binding;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        myViewModel = new ViewModelProvider(this).get(MyViewModel.class);
+        binding.setData(myViewModel);
+        binding.setLifecycleOwner(this);
+    }
+    // onStop 不太可靠，如果是後台自動殺死，就不會呼叫到，同理 onDestroy 在 onStop 沒呼叫前也不會呼叫到
+    // 如果程式閃退，死機、沒電、系統意外關機就不會被保存
+    // 也可以放在 MyViewModel.java 的 add() 裡，但就是比較耗時，會一直觸發
+    @Override
+    protected void onPause() {
+        super.onPause();
+        myViewModel.save();
+    }
+}
+```
+```xml
+<!-- activity_main.xml -->
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="data"
+            type="com.example.viewmodelshp.MyViewModel" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@{String.valueOf(data.getNumber())}"
+            android:textSize="36sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.335" />
+
+        <Button
+            android:id="@+id/button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="@{()->data.add(1)}"
+            android:text="@string/button_plus"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.284"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.499" />
+
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="@{()->data.add(-1)}"
+            android:text="@string/button_minus"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.712"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.499" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
+```
