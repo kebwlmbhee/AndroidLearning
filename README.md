@@ -9,6 +9,7 @@
   - [DataBinding](#databinding)
   - [ViewModel SavedState](#viewmodel-savedstate)
   - [ViewModel with SharedPreference](#viewmodel-with-sharedpreference)
+- [Navigation](#navigation)
 
 # 寫 Android 的好習慣，為自己而寫
 - 將常量放至 resource 裡，避免 hardcoded，讓可維護性上升，專案越大效果越顯著
@@ -646,7 +647,7 @@ public class MainActivity extends AppCompatActivity {
 ## ViewModel with SharedPreference
 請先查看上方的 [ViewModel](#viewmodel) 和 [SharedPreference](#sharedpreference)
 
-![ViewModel_With_SharedPreference](ViewModel_With_SharedPreference.png)
+![ViewModel_With_SharedPreference](Graph/ViewModel_With_SharedPreference.png)
 ```java
 // MyViewModel.java
 package com.example.viewmodelshp;
@@ -779,4 +780,108 @@ public class MainActivity extends ppCompatActivity {
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
+```
+# Navigation
+17
+- NavHost: 存放頁面，是一個容器同時也是一個控制器，用來承載 Fragment 並管理(使用 Stack)他們的導航
+- Fragment: Activity 中模塊化的部分，可將頁面分為好幾塊，用來顯示頁面的其中小部分內容，依存於 Activity，Activity 先創建再建立 Fragment 附加上去
+- NavController: 切換頁面的邏輯，需要定義一些切換的方法
+- NavGraph: 使用圖形化的頁面來做切換頁面的邏輯，是 NavController 的圖形化實作方法
+
+1. 在 build.gradle(app) 中最下方加入 dependencies
+
+    ```gradle
+    dependencies {
+        constraints {
+            implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
+                because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
+            }
+            implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
+                because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
+            }
+        }
+    }
+    ```
+2. package 下右鍵 -> New -> Fragment，會產生相應的 layout 和 java file
+
+    ![Create_Fragment](Graph/Create_Fragment.png)
+3. res 下右鍵 -> New -> Android Resource File -> Type 選擇 Navigation
+
+    ![Create_Navigation_Resouce_File](Graph/Create_Navigation_Resouce_File.png)
+4. add a destination, placeholder 是還沒有建立 Fragment 時先用一個進行佔位，建立後可以使用右鍵選擇 Start，相連後箭頭指向可用來做頁面導向
+
+    4.5. 右側的 Entry 和 End 可以設置切換時的動畫
+
+5. 在主檔案建立 NavHostFragment，選擇剛剛建立好的 Navigation xml file(Step 3)
+6. 編寫 java file
+```java
+// HomeFragment.java 下加入以下程式碼
+
+// 繼承 onViewCreated，在這裡執行 View 建立好之後操作
+@Override
+public void onViewCreated(@NonNull View view,@Nullable Bundle savedInstanceState) {
+    super.onViewCreated(view, savedInstanceState);
+    // Step 4 裡箭頭有自己的 id，就是這裡的 R.id.xxx
+    getView().findViewById(R.id.button).setOnClickListener(
+            Navigation.createNavigateOnClickListener(
+                    R.id.action_homeFragment_to_detailFragment)
+    );
+}
+```
+```java
+// DetailFragment.java 下加入以下程式碼
+
+// 繼承 onViewCreated，在這裡執行 View 建立好之後操作
+@Override
+public void onViewCreated(@NonNull View view,@Nullable Bundle savedInstanceState) {
+    super.onViewCreated(view, savedInstanceState);
+    // Step 4 裡箭頭有自己的 id，就是這裡的 R.id.xxx
+    getView().findViewById(R.id.button2).setOnClickListener(
+            Navigation.createNavigateOnClickListener(
+                    R.id.action_detailFragment_to_homeFragment)
+    );
+}
+```
+```java
+// MainActivity.java
+
+package com.example.navigationdemo;
+
+import android.os.Bundle;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.ui.NavigationUI;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // 這裡的 id 要放的是 activity_main (放置 NavHostFragment 的 Activity) 裡
+        // NavHostFragment 的 id
+        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().
+                findFragmentById(R.id.fragmentContainerView);
+        NavController controller = navHostFragment.getNavController();
+        // 沒有 toolbar 會錯誤，在 activity_main 建立一個簡易 toolbar
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        NavigationUI.setupActionBarWithNavController(this, controller);
+    }
+
+    // 返回時的操作
+    @Override
+    public boolean onSupportNavigateUp() {
+        // 原本的返回值不要
+    //     return super.onSupportNavigateUp();
+        NavController controller = Navigation.findNavController(this, R.id.fragmentContainerView);
+        // 回傳返回操作，當點擊左上 Toolbar 的返回按鈕，則會回傳這個值，這個操作會將父節點的 stack 再次 push 
+        return controller.navigateUp();
+    }
+}
 ```
