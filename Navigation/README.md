@@ -410,6 +410,8 @@ public class DetailFragment extends Fragment {
 
 ## Navigation_With_ViewModel
 
+![Navigation_With_ViewModel](/Graph/Navigation_With_ViewModel.png)
+
 19
 
 1. 重覆上述 [基本 Navigation](#基本-navigation) 1 ~ 5 步
