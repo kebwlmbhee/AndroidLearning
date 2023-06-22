@@ -4,10 +4,13 @@
   - [基本操作](#基本操作)
   - [不同 Activity 間的資料傳遞](#不同-activity-間的資料傳遞)
   - [自製關鍵幀動畫 (tween animation)](#自製關鍵幀動畫-tween-animation)
+  - [Navigation\_With\_ViewModel](#navigation_with_viewmodel)
 
 17 ~ 20
 
 ## 基本操作
+
+17
 
 **使用 Navigation 可以在不同 Activity 間進行交互**
 
@@ -42,7 +45,7 @@
 
     4.5. 右側的 Entry 和 End 可以設置切換時的動畫
 
-5. 在主檔案建立 NavHostFragment，選擇剛剛建立好的 Navigation xml file(Step 3)
+5. 在主檔案的 xml 中建立 NavHostFragment，選擇剛剛建立好的 Navigation xml file(Step 3)
 6. 編寫 java file
 ```java
 // HomeFragment.java 下加入以下程式碼
@@ -390,3 +393,250 @@ public class DetailFragment extends Fragment {
 </set>
 ```
 
+## Navigation_With_ViewModel
+
+19
+
+1. 重覆上述 [基本 Navigation](#基本-navigation) 1 ~ 5 步
+2. 將 layout xml 更改為 DataBinding，綁定函式和變數
+3. 編寫 File
+
+```java
+// MyViewModel.java
+package com.example.navviewmodel;
+
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
+
+public class MyViewModel extends ViewModel {
+    private MutableLiveData<Integer> number;
+
+    public MutableLiveData<Integer> getNumber() {
+        if(number == null) {
+            number = new MutableLiveData<>();
+            number.setValue(0);
+        }
+        return number;
+    }
+
+    public void add(int x) {
+        getNumber().setValue(getNumber().getValue() + x);
+
+        if(getNumber().getValue() < 0) {
+            getNumber().setValue(0);
+        }
+    }
+}
+```
+
+```java
+// MasterFragment.java
+package com.example.navviewmodel;
+
+import android.os.Bundle;
+
+import androidx.databinding.DataBindingUtil;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.SeekBar;
+
+import com.example.navviewmodel.databinding.FragmentMasterBinding;
+
+/**
+ * A simple {@link Fragment} subclass.
+ * Use the {@link MasterFragment#newInstance} factory method to
+ * create an instance of this fragment.
+ */
+public class MasterFragment extends Fragment {
+
+    // TODO: Rename parameter arguments, choose names that match
+    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_PARAM2 = "param2";
+
+    // TODO: Rename and change types of parameters
+    private String mParam1;
+    private String mParam2;
+
+    public MasterFragment() {
+        // Required empty public constructor
+    }
+
+    /**
+     * Use this factory method to create a new instance of
+     * this fragment using the provided parameters.
+     *
+     * @param param1 Parameter 1.
+     * @param param2 Parameter 2.
+     * @return A new instance of fragment MasterFragment.
+     */
+    // TODO: Rename and change types and number of parameters
+    public static MasterFragment newInstance(String param1, String param2) {
+        MasterFragment fragment = new MasterFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_PARAM1, param1);
+        args.putString(ARG_PARAM2, param2);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            mParam1 = getArguments().getString(ARG_PARAM1);
+            mParam2 = getArguments().getString(ARG_PARAM2);
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        MyViewModel myViewModel;
+        // getActivity 獲取關聯的 Activity 實例
+        myViewModel = new ViewModelProvider(getActivity()).get(MyViewModel.class);
+        FragmentMasterBinding binding;
+        // Activity 是使用 setContentView, Fragment 是使用 inflate
+        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_master, container, false);
+        binding.setData(myViewModel);
+        binding.setLifecycleOwner(getActivity());
+
+        binding.button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                NavController controller = Navigation.findNavController(v);
+                controller.navigate(R.id.action_masterFragment_to_detailFragment);
+            }
+        });
+
+        // 初始化，如果裡面已有值，將 progress 初始滑動至該值
+        binding.seekBar.setProgress(myViewModel.getNumber().getValue());
+
+        binding.seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                // 將 number 的值設為 progress
+                myViewModel.getNumber().setValue(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        // 返回一個 binding 的根節點，其為 View 類型
+        return binding.getRoot();
+
+        // Inflate the layout for this fragment
+//        return inflater.inflate(R.layout.fragment_master, container, false);
+    }
+}
+```
+
+```java
+// DetailFragment.java
+package com.example.navviewmodel;
+
+import android.os.Bundle;
+
+import androidx.databinding.DataBindingUtil;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.example.navviewmodel.databinding.FragmentDetailBinding;
+
+/**
+ * A simple {@link Fragment} subclass.
+ * Use the {@link DetailFragment#newInstance} factory method to
+ * create an instance of this fragment.
+ */
+public class DetailFragment extends Fragment {
+
+    // TODO: Rename parameter arguments, choose names that match
+    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_PARAM2 = "param2";
+
+    // TODO: Rename and change types of parameters
+    private String mParam1;
+    private String mParam2;
+
+    public DetailFragment() {
+        // Required empty public constructor
+    }
+
+    /**
+     * Use this factory method to create a new instance of
+     * this fragment using the provided parameters.
+     *
+     * @param param1 Parameter 1.
+     * @param param2 Parameter 2.
+     * @return A new instance of fragment DetailFragment.
+     */
+    // TODO: Rename and change types and number of parameters
+    public static DetailFragment newInstance(String param1, String param2) {
+        DetailFragment fragment = new DetailFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_PARAM1, param1);
+        args.putString(ARG_PARAM2, param2);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            mParam1 = getArguments().getString(ARG_PARAM1);
+            mParam2 = getArguments().getString(ARG_PARAM2);
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        MyViewModel myViewModel;
+        // getActivity 獲取關聯的 Activity 實例
+        myViewModel = new ViewModelProvider(getActivity()).get(MyViewModel.class);
+        FragmentDetailBinding binding;
+        // Activity 是使用 setContentView, Fragment 是使用 inflate
+        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_detail, container, false);
+        binding.setData(myViewModel);
+        binding.setLifecycleOwner(getActivity());
+
+        binding.button4.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                NavController controller = Navigation.findNavController(v);
+                controller.navigate(R.id.action_detailFragment_to_masterFragment);
+            }
+        });
+
+        // 返回一個 binding 的根節點，其為 View 類型
+        return binding.getRoot();
+
+        // Inflate the layout for this fragment
+//        return inflater.inflate(R.layout.fragment_detail, container, false);
+    }
+}
+```
