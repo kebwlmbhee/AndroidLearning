@@ -904,6 +904,8 @@ public class MainActivity extends AppCompatActivity {
 
 18
 
+![Navigation_Pass_Data](/Graph/Navigation_Pass_Data.png)
+
 1. 重覆上述 [基本 Navigation](#基本-navigation) 1 ~ 5 步
 2. 在 detailFragment 中加入 Arguments
    
