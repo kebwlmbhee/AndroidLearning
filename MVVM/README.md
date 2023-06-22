@@ -9,6 +9,18 @@
 
 10 ~ 14
 
+**DataBinding 前先添加**
+
+```gradle
+// build.gradle(Module:app)
+android {
+        // 添加此行
+        dataBinding {
+            enabled true
+        }
+}
+```
+
 ## 基本操作
 
 **使用了 MVVM 後，因為 Controller 不再管理資料，Activity 短暫被消滅(返回鍵、Portrait <-> Landscape、更改語言、關閉)時，再次重啟仍會保留資料**

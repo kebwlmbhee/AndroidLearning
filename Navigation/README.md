@@ -12,6 +12,21 @@
 
 17
 
+**務必先加入依賴**
+```gradle
+// build.gradle(Module:app)
+dependencies {
+    constraints {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
+            because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
+        }
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
+            because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
+        }
+    }
+}
+```
+
 **使用 Navigation 可以在不同 Activity 間進行交互**
 
 - NavHost: 存放頁面，是一個容器同時也是一個控制器，用來承載 Fragment 並管理(使用 Stack)他們的導航

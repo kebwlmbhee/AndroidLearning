@@ -1,13 +1,15 @@
 # Outline
 - [Outline](#outline)
-- [寫 Android 的好習慣，為自己而寫](#寫-android-的好習慣為自己而寫)
+- [Android，為自己而寫](#android為自己而寫)
 - [MVC](#mvc)
 - [MVVM](#mvvm)
 - [SharedPreference](#sharedpreference)
 - [Navigation](#navigation)
 
-# 寫 Android 的好習慣，為自己而寫
+# Android，為自己而寫
 - 將常量放至 resource 裡，避免 hardcoded，讓可維護性上升，專案越大效果越顯著
+- 使用 ConstraintLayout，利用圖形化介面更改介面更加高效方便
+- 使用 DataBinding 前將 xml 轉換為 DataBinding 形式，轉換後仍保留原先的 layout 形式(ConstraintLayout)
 - 自動縮排：Code -> Reformat code 
 - 自動排序屬性(常用在 XML file)：Code -> Rearrange code
 - 過於花俏的動畫不要進行使用
@@ -31,5 +33,7 @@
 **共用的資料，可以在外部和內部進行存取**
 
 # Navigation
+
+[Navigation](/Navigation/)
 
 **使用 Navigation 可以在不同 Activity 間進行交互**
